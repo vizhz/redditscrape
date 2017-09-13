@@ -17,9 +17,12 @@ def fetch(sub):
     imagePosts = []
     posts = []
 
-
     size = 0
+    ilen = 0
+    slen = 0
+
     for post in sub.submissions(start=int(config['custom'][sub.display_name + '.lastfetch'])):
+
         subm = {'uid': post.id,
                 'flair': '' if post.link_flair_text == None else post.link_flair_text,
                 'title': str(post.title),
@@ -27,22 +30,28 @@ def fetch(sub):
                 'body': str(post.selftext)}
         if post.thumbnail == 'image':
             imagePosts.append(subm)
+            ilen += 1
         else:
             posts.append(subm)
-        size = size + 1
-        if size % 500 == 0:
+            slen += 1
+        size += 1
+
+        if ilen % 500 == 0:
             with db.atomic():
-                for dex in range(size - 500, len(imagePosts), 500):
+                for dex in range(ilen - 500, len(imagePosts), 500):
                     ImageSubmission.insert_many(posts[dex:dex + 500]).execute()
+                logger.info('updated image table')
+        if slen % 500 == 0:
                 for dex in range(size - 500, len(posts), 500):
                     Submission.insert_many(posts[dex:dex + 500]).execute()
+                logger.info('updated image table')
+        if size % 1000 == 0:
             logger.info('fetched ' + size.__str__() + ' posts')
-
-
 
     config['custom'][sub.display_name + '.lastfetch'] = time.time().__int__().__str__()
     with open('praw.ini', 'w') as f:
         config.write(f)
+
 
 
 config = configparser.ConfigParser()
