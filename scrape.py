@@ -37,7 +37,7 @@ def fetch(sub, db):
 
     with db.atomic():
         for dex in range(0, len(imagePosts), 500):
-           ImageSubmission.insert_many(posts[dex:dex + 500]).execute()
+           ImageSubmission.insert_many(imagePosts[dex:dex + 500]).execute()
         logger.info('updated image table, total: ' + str(len(imagePosts)))
 
         for dex in range(0, len(posts), 500):
