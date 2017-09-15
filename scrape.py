@@ -23,11 +23,11 @@ def fetch(sub, db):
     for post in sub.submissions(start=int(config['custom'][sub.display_name + '.lastfetch'])):
 
         subm = {'uid': post.id,
-                'flair': '' if post.link_flair_text == None else post.link_flair_text,
+                'flair': post.link_flair_text,
                 'title': str(post.title),
                 'url': str(post.url),
                 'body': str(post.selftext)}
-        if post.thumbnail == 'image':
+        if post.thumbnail == 'image' or 'imgur' in post.url or 'i.reddit' in post.url:
             imagePosts.append(subm)
             ilen += 1
         else:
@@ -46,6 +46,14 @@ def fetch(sub, db):
                 logger.info('updated submission table')
         if size % 1000 == 0:
             logger.info('fetched ' + size.__str__() + ' posts')
+
+    for dex in range(ilen - ilen % 500, len(imagePosts), 500):
+        ImageSubmission.insert_many(posts[dex:dex + 500]).execute()
+    logger.info('updated image table, total: ' + ilen)
+
+    for dex in range(slen - slen % 500, len(posts), 500):
+        Submission.insert_many(posts[dex:dex + 500]).execute()
+    logger.info('updated submission table, total: ' + slen)
 
     config['custom'][sub.display_name + '.lastfetch'] = time.time().__int__().__str__()
     with open('praw.ini', 'w') as f:
@@ -73,13 +81,12 @@ class BaseModel(Model):
 
 class Submission(BaseModel):
     uid = CharField()
-    flair = CharField()
+    flair = CharField(null=True)
     title = CharField()
     url = CharField()
     body = CharField()
 
 class ImageSubmission(Submission):
-    image = CharField()
+    image = CharField(null=True)
 
 fetch(subb, db)
-
