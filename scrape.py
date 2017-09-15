@@ -17,8 +17,6 @@ def fetch(sub, db):
     posts = []
 
     size = 0
-    ilen = 0
-    slen = 0
 
     for post in sub.submissions(start=int(config['custom'][sub.display_name + '.lastfetch'])):
 
@@ -29,31 +27,22 @@ def fetch(sub, db):
                 'body': str(post.selftext)}
         if post.thumbnail == 'image' or 'imgur.com/' in post.url or '//i.redd.it' in post.url:
             imagePosts.append(subm)
-            ilen += 1
         else:
             posts.append(subm)
-            slen += 1
         size += 1
 
-        if ilen != 0 and ilen % 500 == 0:
-            with db.atomic():
-                for dex in range(ilen - 500, len(imagePosts), 500):
-                    ImageSubmission.insert_many(posts[dex:dex + 500]).execute()
-                logger.info('updated image table')
-        if slen != 0 and slen % 500 == 0:
-                for dex in range(size - 500, len(posts), 500):
-                    Submission.insert_many(posts[dex:dex + 500]).execute()
-                logger.info('updated submission table')
         if size % 1000 == 0:
             logger.info('fetched ' + size.__str__() + ' posts')
 
-    for dex in range(ilen - ilen % 500, len(imagePosts), 500):
-        ImageSubmission.insert_many(posts[dex:dex + 500]).execute()
-    logger.info('updated image table, total: ' + ilen)
 
-    for dex in range(slen - slen % 500, len(posts), 500):
-        Submission.insert_many(posts[dex:dex + 500]).execute()
-    logger.info('updated submission table, total: ' + slen)
+    with db.atomic():
+        for dex in range(0, len(imagePosts), 500):
+           ImageSubmission.insert_many(posts[dex:dex + 500]).execute()
+        logger.info('updated image table, total: ' + ilen)
+
+        for dex in range(0, len(posts), 500):
+           Submission.insert_many(posts[dex:dex + 500]).execute()
+        logger.info('updated submission table, total: ' + slen)
 
     config['custom'][sub.display_name + '.lastfetch'] = time.time().__int__().__str__()
     with open('praw.ini', 'w') as f:
