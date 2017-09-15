@@ -27,7 +27,7 @@ def fetch(sub, db):
                 'title': str(post.title),
                 'url': str(post.url),
                 'body': str(post.selftext)}
-        if post.thumbnail == 'image' or 'imgur' in post.url or 'i.reddit' in post.url:
+        if post.thumbnail == 'image' or 'imgur.com/' in post.url or '//i.redd.it' in post.url:
             imagePosts.append(subm)
             ilen += 1
         else:
