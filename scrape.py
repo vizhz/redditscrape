@@ -4,6 +4,7 @@ import logging
 import configparser
 from peewee import *
 
+
 def fetch(sub, db):
     db.connect()
     if (not sub.display_name + '.lastfetch' in config['custom']):
@@ -17,6 +18,18 @@ def fetch(sub, db):
     posts = []
 
     size = 0
+    ifetch = 0
+    sfetch = 0
+
+    def updatedb():
+        with db.atomic():
+            for dex in range(ifetch, len(imagePosts), 500):
+                ImageSubmission.insert_many(imagePosts[dex:dex + 500]).execute()
+            logger.info('updated image table, total: ' + str(len(imagePosts)))
+
+            for dex in range(sfetch, len(posts), 500):
+                Submission.insert_many(posts[dex:dex + 500]).execute()
+            logger.info('updated submission table, total: ' + str(len(posts)))
 
     for post in sub.submissions(start=int(config['custom'][sub.display_name + '.lastfetch'])):
 
@@ -32,22 +45,16 @@ def fetch(sub, db):
         size += 1
 
         if size % 1000 == 0:
+            if size % 25000 == 0:
+                updatedb()
+                ifetch = len(imagePosts)
+                sfetch = len(posts)
             logger.info('fetched ' + size.__str__() + ' posts')
 
-
-    with db.atomic():
-        for dex in range(0, len(imagePosts), 500):
-           ImageSubmission.insert_many(imagePosts[dex:dex + 500]).execute()
-        logger.info('updated image table, total: ' + str(len(imagePosts)))
-
-        for dex in range(0, len(posts), 500):
-           Submission.insert_many(posts[dex:dex + 500]).execute()
-        logger.info('updated submission table, total: ' + str(len(posts)))
-
+    updatedb()
     config['custom'][sub.display_name + '.lastfetch'] = time.time().__int__().__str__()
     with open('praw.ini', 'w') as f:
         config.write(f)
-
 
 
 config = configparser.ConfigParser()
@@ -64,9 +71,11 @@ subb = reddit.subreddit(config['custom']['sub'].lower())
 logging.info('Fetching from: ' + subb.display_name)
 db = SqliteDatabase(subb.display_name + '.db')
 
+
 class BaseModel(Model):
     class Meta:
         database = db
+
 
 class Submission(BaseModel):
     uid = CharField()
@@ -75,7 +84,9 @@ class Submission(BaseModel):
     url = CharField()
     body = CharField()
 
+
 class ImageSubmission(Submission):
     image = CharField(null=True)
+
 
 fetch(subb, db)
