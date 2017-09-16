@@ -19,7 +19,7 @@ def authenticate():
 
     subb = reddit.subreddit(config['custom']['sub'].lower())
     logging.info('Working subreddit: ' + subb.display_name)
-    return reddit
+    return reddit, subb
 
 
 class BaseModel(Model):
