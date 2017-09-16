@@ -1,11 +1,9 @@
-import praw
 import time
-import logging
-import configparser
-from peewee import *
+
+from models import *
 
 
-def fetch(sub, db):
+def fetch(sub):
     db.connect()
     if (not sub.display_name + '.lastfetch' in config['custom']):
         config['custom'][sub.display_name + '.lastfetch'] = '1300000000'
@@ -57,36 +55,5 @@ def fetch(sub, db):
         config.write(f)
 
 
-config = configparser.ConfigParser()
-config.read('praw.ini')
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
-
-reddit = praw.Reddit('scrap', user_agent='pyscript')
-logging.info('Authenticated as ' + reddit.user.me().__str__())
-
-subb = reddit.subreddit(config['custom']['sub'].lower())
-
-logging.info('Fetching from: ' + subb.display_name)
-db = SqliteDatabase(subb.display_name + '.db')
-
-
-class BaseModel(Model):
-    class Meta:
-        database = db
-
-
-class Submission(BaseModel):
-    uid = CharField()
-    flair = CharField(null=True)
-    title = CharField()
-    url = CharField()
-    body = CharField()
-
-
-class ImageSubmission(Submission):
-    image = CharField(null=True)
-
-
-fetch(subb, db)
+[reddit, subb] = authenticate()
+fetch(subb)
