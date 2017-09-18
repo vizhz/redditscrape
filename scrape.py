@@ -14,20 +14,17 @@ def fetch(sub):
     db.close()
     imagePosts = []
     posts = []
-
     size = 0
-    ifetch = 0
-    sfetch = 0
-
     def updatedb():
         with db.atomic():
-            for dex in range(ifetch, len(imagePosts), 500):
+            for dex in range(0, len(imagePosts), 500):
                 ImageSubmission.insert_many(imagePosts[dex:dex + 500]).execute()
             logger.info('updated image table, total: ' + str(len(imagePosts)))
-
-            for dex in range(sfetch, len(posts), 500):
+            imagePosts.clear()
+            for dex in range(0, len(posts), 500):
                 Submission.insert_many(posts[dex:dex + 500]).execute()
             logger.info('updated submission table, total: ' + str(len(posts)))
+            posts.clear()
 
     for post in sub.submissions(start=int(config['custom'][sub.display_name + '.lastfetch'])):
 
